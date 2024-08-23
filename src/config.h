@@ -23,11 +23,12 @@
   #endif
 
 #ifdef  DEVKIT_M1_ESP32_S3
-    #define SPI_MOSI    (uint8_t)16  //No need to define them, it's default in the SPI
+    #define SPI_MOSI    (uint8_t)16     //No need to define them, it's default in the SPI
     #define SPI_MISO    (uint8_t)21
     #define SPI_SCK     (uint8_t)37
-    #define SPI_SS      (uint8_t)15  //Default is 42 
-    #define IRQ_PIN     (uint8_t)17
+    #define SPI_SS      (uint8_t)15     //Default is 42 
+
+    #define IRQ_PIN     (uint8_t)4     // NOTE: as WAKEUP-source, we must use any of RTC-I/O pins, i.e. pin 0, 2, 4, 12-15, 25-27, 32-39.
     
     #define MCU_LED1    (uint8_t)18
     #define MCU_LED2    (uint8_t)1

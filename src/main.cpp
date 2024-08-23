@@ -711,6 +711,8 @@ static int nfcCurrentState = NFC_POLL_STATE_NOTINIT;
 	
 void poll_for_nfc_tags(void * parameter)
 {
+    static bool scanTaskStarted = false;
+
     ndefStatus err;
 	ReturnCode ret;
     static bool found = false;
@@ -732,6 +734,12 @@ void poll_for_nfc_tags(void * parameter)
 
     for(;;)
     { 
+        if (scanTaskStarted)
+        {
+            Serial0.print("NFC-scan task started ...");
+            scanTaskStarted = false;
+        }
+
         rfalNfcWorker(); 
 
         switch (nfcCurrentState) 
@@ -740,7 +748,7 @@ void poll_for_nfc_tags(void * parameter)
             case NFC_POLL_STATE_START_DISCOVERY:
                 rfalNfcDeactivate(RFAL_NFC_DEACTIVATE_IDLE);
                 rfalNfcDiscover(&discParam);
-
+                scanTaskStarted = true;
                 nfcCurrentState = NFC_POLL_STATE_DISCOVERY;
             break;
 
@@ -913,11 +921,55 @@ void poll_for_nfc_tags(void * parameter)
 
 /**************************************************** main: SETUP and LOOP **************************************************/
 
+const uint64_t WAKEUP_PIN_BITMASK  = (0x0000000000000001ULL << IRQ_PIN);
+
+RTC_DATA_ATTR int bootCount = 0;
+
+
+/*
+Method to print the GPIO that triggered the wakeup
+*/
+void print_GPIO_wake_up(void)
+{
+  uint64_t GPIO_reason = esp_sleep_get_ext1_wakeup_status();
+  Serial.print("GPIO that triggered the wake up: GPIO ");
+  Serial.println((log(GPIO_reason))/log(2), 0);
+}
+
+
+/*
+Method to print the reason by which ESP32
+has been awaken from sleep
+*/
+void print_wakeup_reason(void)
+{
+  esp_sleep_wakeup_cause_t wakeup_reason;
+
+  wakeup_reason = esp_sleep_get_wakeup_cause();
+
+  switch(wakeup_reason)
+  {
+    case ESP_SLEEP_WAKEUP_EXT0 : Serial0.println("Wakeup caused by external signal using RTC_IO"); break;
+    case ESP_SLEEP_WAKEUP_EXT1 : Serial0.println("Wakeup caused by external signal using RTC_CNTL"); print_GPIO_wake_up(); break;
+    case ESP_SLEEP_WAKEUP_TIMER : Serial0.println("Wakeup caused by timer"); break;
+    case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial0.println("Wakeup caused by touchpad"); break;
+    case ESP_SLEEP_WAKEUP_ULP : Serial0.println("Wakeup caused by ULP program"); break;
+    default : Serial0.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
+  }
+}  
+
+
 void setup(void) 
 {
     Serial0.begin(115200);
     Serial0.println("Init ...");
     
+    ++bootCount;
+    Serial0.println("Boot number: " + String(bootCount));
+
+    // Print the wakeup reason for ESP32:
+    print_wakeup_reason();
+
     spi_init();
 
     // NFC:
@@ -945,6 +997,27 @@ void setup(void)
         1,               // Task priority
         NULL             // Task handle
     );
+
+    /*
+    First we configure the wake up source
+    We set our ESP32 to wake up for an external trigger.
+    There are two types for ESP32, ext0 and ext1 .
+    ext0 uses RTC_IO to wakeup thus requires RTC peripherals
+    to be on while ext1 uses RTC Controller so doesnt need
+    peripherals to be powered on.
+    Note that using internal pullups/pulldowns also requires
+    RTC peripherals to be turned on.
+   */
+    //esp_deep_sleep_enable_ext0_wakeup(GPIO_NUM_15,1); //1 = High, 0 = Low
+
+    //If you were to use ext1, you would use it like
+    esp_sleep_enable_ext1_wakeup(WAKEUP_PIN_BITMASK, ESP_EXT1_WAKEUP_ANY_LOW);      // TODO: or, ESP_EXT1_WAKEUP_ANY_HIGH ???
+
+    Serial0.println("Going to sleep in 3sec ...");
+    delay(3000);
+    vTaskDelay(3000);
+    esp_deep_sleep_start();
+    Serial0.println("This will never be printed ...");
 }
 
 
