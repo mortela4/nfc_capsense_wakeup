@@ -160,8 +160,23 @@ static rfalNfcDiscoverParam discParam = {
         // lmConfigPA NOT set ...
         // lmConfigPF NOT set ...
 		.notifyCb = NULL, 
-		.wakeupEnabled = false, 
-		.wakeupConfigDefault = true,		
+		.wakeupEnabled = true, 
+		.wakeupConfigDefault = false,
+        .wakeupConfig = 
+        {
+            .period = RFAL_WUM_PERIOD_100MS,                    /*!< Wake-Up Timer period;how often measurement(s) is performed (_10MS to _800MS) */
+            .irqTout = false,                                   /*!< IRQ at every timeout will refresh the measurement(s)       */
+            .cap = 
+            {
+                .enabled = true,                                /*!< Capacitive measurement enabled                             */
+                .delta = 100,                                   /*!< Delta between the reference and measurement to wake-up     */
+                .reference = RFAL_WUM_REFERENCE_AUTO,           /*!< Reference to be used;RFAL_WUM_REFERENCE_AUTO sets it auto  */
+                .autoAvg = true,                                /*!< Use the HW Auto Averaging feature                          */
+                .aaInclMeas = false,                            /*!< When AutoAvg is enabled, include IRQ measurement           */
+                .aaWeight = RFAL_WUM_AA_WEIGHT_32,              /*!< When AutoAvg is enabled, last measure weight               */                
+            }
+        },
+        .wakeupNPolls = 10,	
 };
 
 static uint8_t rawMessageBuf[NDEF_MESSAGE_BUF_LEN];
