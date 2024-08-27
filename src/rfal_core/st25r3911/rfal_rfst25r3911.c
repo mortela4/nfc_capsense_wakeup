@@ -3764,8 +3764,8 @@ ReturnCode rfalWakeUpModeStart( const rfalWakeUpConfig *config )
             st25r3911WriteRegister( ST25R3911_REG_CAPACITANCE_MEASURE_REF, (uint8_t)gRFAL.wum.cfg.cap.reference );
         }
         
-        reg  |= ST25R3911_REG_WUP_TIMER_CONTROL_wcap;
-        irqs |= ST25R3911_IRQ_MASK_WCAP;
+        reg  |= ST25R3911_REG_WUP_TIMER_CONTROL_wcap;       // NOTE: CapSense-wakeup under timer control (periodic sampling).
+        irqs |= ST25R3911_IRQ_MASK_WCAP;                    // NOTE: trigger wakeup-IRQ from CapSense!
     }
     
     /* Disable and clear all interrupts except Wake-Up IRQs */

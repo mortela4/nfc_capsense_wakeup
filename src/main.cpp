@@ -932,8 +932,8 @@ Method to print the GPIO that triggered the wakeup
 void print_GPIO_wake_up(void)
 {
   uint64_t GPIO_reason = esp_sleep_get_ext1_wakeup_status();
-  Serial.print("GPIO that triggered the wake up: GPIO ");
-  Serial.println((log(GPIO_reason))/log(2), 0);
+  Serial0.print("GPIO that triggered the wake up: GPIO ");
+  Serial0.println((log(GPIO_reason))/log(2), 0);
 }
 
 
@@ -954,7 +954,7 @@ void print_wakeup_reason(void)
     case ESP_SLEEP_WAKEUP_TIMER : Serial0.println("Wakeup caused by timer"); break;
     case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial0.println("Wakeup caused by touchpad"); break;
     case ESP_SLEEP_WAKEUP_ULP : Serial0.println("Wakeup caused by ULP program"); break;
-    default : Serial0.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
+    default : Serial0.printf("Wakeup NOT from 'deep sleep'! Source num: %d\n", wakeup_reason); break;   // 0 = 'undefined' (Reset NOT from sleep-modes). Others: from a 'light sleep' state.
   }
 }  
 
@@ -1011,7 +1011,7 @@ void setup(void)
     //esp_deep_sleep_enable_ext0_wakeup(GPIO_NUM_15,1); //1 = High, 0 = Low
 
     //If you were to use ext1, you would use it like
-    esp_sleep_enable_ext1_wakeup(WAKEUP_PIN_BITMASK, ESP_EXT1_WAKEUP_ANY_LOW);      // TODO: or, ESP_EXT1_WAKEUP_ANY_HIGH ???
+    esp_sleep_enable_ext1_wakeup(WAKEUP_PIN_BITMASK, ESP_EXT1_WAKEUP_ANY_HIGH);      // TODO: or, ESP_EXT1_WAKEUP_ANY_HIGH ???
 
     Serial0.println("Going to sleep in 3sec ...");
     delay(3000);
