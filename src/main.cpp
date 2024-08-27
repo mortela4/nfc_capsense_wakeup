@@ -169,7 +169,7 @@ static rfalNfcDiscoverParam discParam = {
             .cap = 
             {
                 .enabled = true,                                /*!< Capacitive measurement enabled                             */
-                .delta = 100,                                   /*!< Delta between the reference and measurement to wake-up     */
+                .delta = 25,                                   /*!< Delta between the reference and measurement to wake-up     */
                 .reference = RFAL_WUM_REFERENCE_AUTO,           /*!< Reference to be used;RFAL_WUM_REFERENCE_AUTO sets it auto  */
                 .autoAvg = true,                                /*!< Use the HW Auto Averaging feature                          */
                 .aaInclMeas = false,                            /*!< When AutoAvg is enabled, include IRQ measurement           */
