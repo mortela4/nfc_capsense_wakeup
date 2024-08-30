@@ -164,11 +164,30 @@ static rfalNfcDiscoverParam discParam = {
 		.wakeupConfigDefault = false,
         .wakeupConfig = 
         {
-            .period = RFAL_WUM_PERIOD_100MS,                    /*!< Wake-Up Timer period;how often measurement(s) is performed (_10MS to _800MS) */
+            .period = RFAL_WUM_PERIOD_10MS,                    /*!< Wake-Up Timer period;how often measurement(s) is performed (_10MS to _800MS) */
             .irqTout = false,                                   /*!< IRQ at every timeout will refresh the measurement(s)       */
+            .indAmp = 
+            {
+                .enabled = true,                        /*!< Inductive Amplitude measurement enabled                    */
+                .delta = 1,                            /*!< Delta between the reference and measurement to wake-up (value=256/(delta*16))     */
+                .reference = RFAL_WUM_REFERENCE_AUTO,   /*!< Reference to be used;RFAL_WUM_REFERENCE_AUTO sets it auto  */
+                .autoAvg = false,                        /*!< Use the HW Auto Averaging feature                          */
+                .aaInclMeas = false,                    /*!< When AutoAvg is enabled, include IRQ measurement           */
+                .aaWeight = RFAL_WUM_AA_WEIGHT_4,        /*!< When AutoAvg is enabled, last measure weight               */
+
+            },
+            .indPha = 
+            {
+                .enabled = true,                        /*!< Inductive Phase measurement enabled                        */
+                .delta = 1,                            /*!< Delta between the reference and measurement to wake-up     */
+                .reference = RFAL_WUM_REFERENCE_AUTO,        /*!< Reference to be used;RFAL_WUM_REFERENCE_AUTO sets it auto  */
+                .autoAvg = false,                         /*!< Use the HW Auto Averaging feature                          */
+                .aaInclMeas = false,                      /*!< When AutoAvg is enabled, include IRQ measurement           */
+                .aaWeight = RFAL_WUM_AA_WEIGHT_32,        /*!< When AutoAvg is enabled, last measure weight               */
+            },
             .cap = 
             {
-                .enabled = true,                                /*!< Capacitive measurement enabled                             */
+                .enabled = false,                                /*!< Capacitive measurement enabled                             */
                 .delta = 25,                                   /*!< Delta between the reference and measurement to wake-up     */
                 .reference = RFAL_WUM_REFERENCE_AUTO,           /*!< Reference to be used;RFAL_WUM_REFERENCE_AUTO sets it auto  */
                 .autoAvg = true,                                /*!< Use the HW Auto Averaging feature                          */
