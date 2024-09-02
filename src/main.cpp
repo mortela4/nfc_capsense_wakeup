@@ -16,6 +16,7 @@
 
 extern "C" {
 #include "utils.h"
+#include "rfal_analogConfig.h"
 #include "rfal_utils.h"
 #include "rfal_nfc.h"             // Includes all of "rfal_nfc[a|b|f|v].h", "rfal_isoDep.h" and "rfal_nfcDep.h".
 #include "ndef_poller.h"
@@ -992,39 +993,58 @@ void setup(void)
     spi_init();
 
     // NFC:
-    ReturnCode ret = rfalDeinitialize();
-    Serial0.println("NFC de-initialized before init (in case of wakeup-event --> NFC is still running) ...");
-
-    rfalFieldOff();
-    Serial0.println("NFC RF-field turned OFF ...");
-    
-    vTaskDelay(5000);
-
-    ret = rfalNfcInitialize();      // WAS: 'rfalInitialize()' - but this function is NOT setting NFC-state!!
-    Serial0.println("NFC re-initialized ...");
-
-    if (RFAL_ERR_NONE != ret)
+    rfalAnalogConfigInitialize(); 
+    if( rfalInitialize() != ERR_NONE )
     {
-        Serial0.println("ERROR: NFC subsystem init failed!\nNFC subsystem init return code:");
-        Serial0.println(ret);
-        while(1)
+        /* System error - unable to initialize ST25R3911(B) */
+        Serial0.println("\r\nNFC init FAILED! Stopped - just looping here ...\r\n");
+
+        while (true)
         {
-            vTaskDelay(1000);
+            vTaskDelay(10000);
         }
+        /* Block MCU / signal error / return error */
     }
+ 
+    /* RFAL initilization OK, continue with application */
+    
+    /* Set ST25R3911(B) in Wake-up mode - using DEFAULT config! */
+    rfalWakeUpModeStart(NULL);
+
+
+    // ReturnCode ret = rfalDeinitialize();
+    // Serial0.println("NFC de-initialized before init (in case of wakeup-event --> NFC is still running) ...");
+
+    // rfalFieldOff();
+    // Serial0.println("NFC RF-field turned OFF ...");
+    
+    // vTaskDelay(5000);
+
+    // ret = rfalNfcInitialize();      // WAS: 'rfalInitialize()' - but this function is NOT setting NFC-state!!
+    // Serial0.println("NFC re-initialized ...");
+
+    // if (RFAL_ERR_NONE != ret)
+    // {
+    //     Serial0.println("ERROR: NFC subsystem init failed!\nNFC subsystem init return code:");
+    //     Serial0.println(ret);
+    //     while(1)
+    //     {
+    //         vTaskDelay(1000);
+    //     }
+    // }
 
     Serial0.println("NFC subsystem initialized OK ...");
 
     nfcCurrentState = NFC_POLL_STATE_START_DISCOVERY;
 
-    xTaskCreate(
-        poll_for_nfc_tags,    // Function that should be called
-        "NFC-Poll ",       // Name of the task (for debugging)
-        4096,            // Stack size (bytes)
-        NULL,            // Parameter to pass
-        1,               // Task priority
-        NULL             // Task handle
-    );
+    // xTaskCreate(
+    //     poll_for_nfc_tags,    // Function that should be called
+    //     "NFC-Poll ",       // Name of the task (for debugging)
+    //     4096,            // Stack size (bytes)
+    //     NULL,            // Parameter to pass
+    //     1,               // Task priority
+    //     NULL             // Task handle
+    // );
 
     /*
     First we configure the wake up source
