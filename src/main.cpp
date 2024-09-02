@@ -9,6 +9,8 @@
 
 #include <errno.h>
 
+#include <esp_task_wdt.h>
+
 #include "SPI.h"
 
 #include "rfal_platform/rfal_platform.h"
@@ -25,6 +27,10 @@ extern "C" {
 
 //#include "ndef_dump.h"
 }
+
+
+// 30 seconds WDT
+#define WDT_TIMEOUT     30
 
 
 // REFERENCE: https://www.st.com/resource/en/user_manual/um2890-rfnfc-abstraction-layer-rfal-stmicroelectronics.pdf
@@ -776,6 +782,9 @@ void poll_for_nfc_tags(void * parameter)
             case NFC_POLL_STATE_DISCOVERY:
                 if (rfalNfcIsDevActivated(rfalNfcGetState())) 
                 {
+                    // NOTE: has to detect tag within 30sec - then clear watchdog here - else Reset will happen:
+                    esp_task_wdt_reset();
+                    
                     rfalNfcGetActiveDevice(&nfcDevice);
 
                     delay(50);
@@ -1068,14 +1077,20 @@ void setup(void)
 
     nfcCurrentState = NFC_POLL_STATE_START_DISCOVERY;
 
+    TaskHandle_t nfcTask;
+
     xTaskCreate(
         poll_for_nfc_tags,    // Function that should be called
         "NFC-Poll ",       // Name of the task (for debugging)
         4096,            // Stack size (bytes)
         NULL,            // Parameter to pass
         1,               // Task priority
-        NULL             // Task handle
+        &nfcTask             // Task handle
     );
+
+    Serial0.println("Configuring WDT...");
+    esp_task_wdt_init(WDT_TIMEOUT, true);       // Enable panic so ESP32 restarts.
+    esp_task_wdt_add(nfcTask);                     // Add NFC-task to WDT watch (using NULL as argument = current thread).
 
     Serial0.println("START application ...");
 }
