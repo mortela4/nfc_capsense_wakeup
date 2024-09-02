@@ -992,8 +992,17 @@ void setup(void)
     spi_init();
 
     // NFC:
-    ReturnCode ret = rfalNfcInitialize();      // WAS: 'rfalInitialize()' - but this function is NOT setting NFC-state!!
+    ReturnCode ret = rfalDeinitialize();
+    Serial0.println("NFC de-initialized before init (in case of wakeup-event --> NFC is still running) ...");
+
+    rfalFieldOff();
+    Serial0.println("NFC RF-field turned OFF ...");
     
+    vTaskDelay(5000);
+
+    ret = rfalNfcInitialize();      // WAS: 'rfalInitialize()' - but this function is NOT setting NFC-state!!
+    Serial0.println("NFC re-initialized ...");
+
     if (RFAL_ERR_NONE != ret)
     {
         Serial0.println("ERROR: NFC subsystem init failed!\nNFC subsystem init return code:");
