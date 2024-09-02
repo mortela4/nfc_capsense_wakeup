@@ -947,12 +947,27 @@ RTC_DATA_ATTR int bootCount = 0;
 
 
 /*
-Method to print the GPIO that triggered the wakeup
+Print the GPIO that triggered the EXT1-wakeup.
 */
-void print_GPIO_wake_up(void)
+static void print_EXT0_GPIO_wake_up(void)
+{
+#if SOC_GPIO_SUPPORT_DEEPSLEEP_WAKEUP
+  uint64_t GPIO_reason = esp_sleep_get_gpio_wakeup_status();
+  Serial0.print("GPIO that triggered the EXT1-wakeup: GPIO");
+  Serial0.println((log(GPIO_reason))/log(2), 0);
+#else
+  Serial0.println("ERROR: SoC does NOT support DEEPSLEEP-wakeup! So EXT0-trigger should NOT be valid!(?)");
+#endif
+}
+
+
+/*
+Print the GPIO that triggered the EXT1-wakeup.
+*/
+static void print_EXT1_GPIO_wake_up(void)
 {
   uint64_t GPIO_reason = esp_sleep_get_ext1_wakeup_status();
-  Serial0.print("GPIO that triggered the wake up: GPIO ");
+  Serial0.print("GPIO that triggered the EXT1-wakeup: GPIO");
   Serial0.println((log(GPIO_reason))/log(2), 0);
 }
 
@@ -961,7 +976,7 @@ void print_GPIO_wake_up(void)
 Method to print the reason by which ESP32
 has been awaken from sleep
 */
-void print_wakeup_reason(void)
+void check_reset_source(void)
 {
   esp_sleep_wakeup_cause_t wakeup_reason;
 
@@ -969,8 +984,8 @@ void print_wakeup_reason(void)
 
   switch(wakeup_reason)
   {
-    case ESP_SLEEP_WAKEUP_EXT0 : Serial0.println("Wakeup caused by external signal using RTC_IO"); break;
-    case ESP_SLEEP_WAKEUP_EXT1 : Serial0.println("Wakeup caused by external signal using RTC_CNTL"); print_GPIO_wake_up(); break;
+    case ESP_SLEEP_WAKEUP_EXT0 : Serial0.println("Wakeup caused by external signal using RTC_IO"); print_EXT0_GPIO_wake_up(); break;
+    case ESP_SLEEP_WAKEUP_EXT1 : Serial0.println("Wakeup caused by external signal using RTC_CNTL"); print_EXT1_GPIO_wake_up(); break;
     case ESP_SLEEP_WAKEUP_TIMER : Serial0.println("Wakeup caused by timer"); break;
     case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial0.println("Wakeup caused by touchpad"); break;
     case ESP_SLEEP_WAKEUP_ULP : Serial0.println("Wakeup caused by ULP program"); break;
@@ -988,7 +1003,7 @@ void setup(void)
     Serial0.println("Boot number: " + String(bootCount));
 
     // Print the wakeup reason for ESP32:
-    print_wakeup_reason();
+    check_reset_source();
 
     spi_init();
 
@@ -1011,14 +1026,6 @@ void setup(void)
     /* Set ST25R3911(B) in Wake-up mode - using DEFAULT config! */
     rfalWakeUpModeStart(NULL);
 
-
-    // ReturnCode ret = rfalDeinitialize();
-    // Serial0.println("NFC de-initialized before init (in case of wakeup-event --> NFC is still running) ...");
-
-    // rfalFieldOff();
-    // Serial0.println("NFC RF-field turned OFF ...");
-    
-    // vTaskDelay(5000);
 
     // ret = rfalNfcInitialize();      // WAS: 'rfalInitialize()' - but this function is NOT setting NFC-state!!
     // Serial0.println("NFC re-initialized ...");
