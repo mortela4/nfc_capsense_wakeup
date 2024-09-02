@@ -972,44 +972,10 @@ static void print_EXT1_GPIO_wake_up(void)
 }
 
 
-/*
-Method to print the reason by which ESP32
-has been awaken from sleep
-*/
-void check_reset_source(void)
+static void nfc_wakeup_init(void)
 {
-  esp_sleep_wakeup_cause_t wakeup_reason;
-
-  wakeup_reason = esp_sleep_get_wakeup_cause();
-
-  switch(wakeup_reason)
-  {
-    case ESP_SLEEP_WAKEUP_EXT0 : Serial0.println("Wakeup caused by external signal using RTC_IO"); print_EXT0_GPIO_wake_up(); break;
-    case ESP_SLEEP_WAKEUP_EXT1 : Serial0.println("Wakeup caused by external signal using RTC_CNTL"); print_EXT1_GPIO_wake_up(); break;
-    case ESP_SLEEP_WAKEUP_TIMER : Serial0.println("Wakeup caused by timer"); break;
-    case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial0.println("Wakeup caused by touchpad"); break;
-    case ESP_SLEEP_WAKEUP_ULP : Serial0.println("Wakeup caused by ULP program"); break;
-    default : Serial0.printf("Wakeup NOT from 'deep sleep'! Source num: %d\n", wakeup_reason); break;   // 0 = 'undefined' (Reset NOT from sleep-modes). Others: from a 'light sleep' state.
-  }
-}  
-
-
-void setup(void) 
-{
-    Serial0.begin(115200);
-    Serial0.println("Init ...");
-    
-    ++bootCount;
-    Serial0.println("Boot number: " + String(bootCount));
-
-    // Print the wakeup reason for ESP32:
-    check_reset_source();
-
-    spi_init();
-
-    // NFC:
     rfalAnalogConfigInitialize(); 
-    if( rfalInitialize() != ERR_NONE )
+    if ( rfalInitialize() != ERR_NONE )
     {
         /* System error - unable to initialize ST25R3911(B) */
         Serial0.println("\r\nNFC init FAILED! Stopped - just looping here ...\r\n");
@@ -1020,39 +986,14 @@ void setup(void)
         }
         /* Block MCU / signal error / return error */
     }
- 
-    /* RFAL initilization OK, continue with application */
-    
+
     /* Set ST25R3911(B) in Wake-up mode - using DEFAULT config! */
     rfalWakeUpModeStart(NULL);
+}
 
 
-    // ret = rfalNfcInitialize();      // WAS: 'rfalInitialize()' - but this function is NOT setting NFC-state!!
-    // Serial0.println("NFC re-initialized ...");
-
-    // if (RFAL_ERR_NONE != ret)
-    // {
-    //     Serial0.println("ERROR: NFC subsystem init failed!\nNFC subsystem init return code:");
-    //     Serial0.println(ret);
-    //     while(1)
-    //     {
-    //         vTaskDelay(1000);
-    //     }
-    // }
-
-    Serial0.println("NFC subsystem initialized OK ...");
-
-    nfcCurrentState = NFC_POLL_STATE_START_DISCOVERY;
-
-    // xTaskCreate(
-    //     poll_for_nfc_tags,    // Function that should be called
-    //     "NFC-Poll ",       // Name of the task (for debugging)
-    //     4096,            // Stack size (bytes)
-    //     NULL,            // Parameter to pass
-    //     1,               // Task priority
-    //     NULL             // Task handle
-    // );
-
+static void sleep_mode_init(void)
+{
     /*
     First we configure the wake up source
     We set our ESP32 to wake up for an external trigger.
@@ -1072,7 +1013,71 @@ void setup(void)
     delay(3000);
     vTaskDelay(3000);
     esp_deep_sleep_start();
-    Serial0.println("This will never be printed ...");
+}
+
+
+/*
+Method to print the reason by which ESP32
+has been awaken from sleep
+*/
+static void check_reset_source(void)
+{
+  esp_sleep_wakeup_cause_t wakeup_reason;
+
+  wakeup_reason = esp_sleep_get_wakeup_cause();
+
+  switch(wakeup_reason)
+  {
+    case ESP_SLEEP_WAKEUP_EXT0 : Serial0.println("Wakeup caused by external signal using RTC_IO"); print_EXT0_GPIO_wake_up(); break;
+    case ESP_SLEEP_WAKEUP_EXT1 : Serial0.println("Wakeup caused by external signal using RTC_CNTL"); print_EXT1_GPIO_wake_up(); break;
+    case ESP_SLEEP_WAKEUP_TIMER : Serial0.println("Wakeup caused by timer"); break;
+    case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial0.println("Wakeup caused by touchpad"); break;
+    case ESP_SLEEP_WAKEUP_ULP : Serial0.println("Wakeup caused by ULP program"); break;
+    default : Serial0.printf("Wakeup NOT from 'deep sleep'! Source num: %d\n", wakeup_reason); nfc_wakeup_init(); sleep_mode_init(); break;   // 0 = 'undefined' (Reset NOT from sleep-modes). Others: from a 'light sleep' state.
+  }
+}  
+
+
+void setup(void) 
+{
+    Serial0.begin(115200);
+    Serial0.println("Init ...");
+    
+    ++bootCount;
+    Serial0.println("Boot number: " + String(bootCount));
+
+    spi_init();     // NOTE: this MUST come BEFORE any NFC-init functions, as ST25R3911(B) communication depends on it!!
+
+    // Print the wakeup reason for ESP32, and do required, conditional housekeeping:
+    check_reset_source();
+
+    // NFC:
+    ReturnCode ret = rfalNfcInitialize();      // WAS: 'rfalInitialize()' - but this function is NOT setting NFC-state!!
+    if (RFAL_ERR_NONE != ret)
+    {
+        Serial0.println("ERROR: NFC subsystem init failed!\nNFC subsystem init return code:");
+        Serial0.println(ret);
+        while(1)
+        {
+            vTaskDelay(1000);
+        }
+    }
+
+    /* RFAL initilization OK, continue with application */
+    Serial0.println("NFC initialized - ready to scan ...");    
+
+    nfcCurrentState = NFC_POLL_STATE_START_DISCOVERY;
+
+    xTaskCreate(
+        poll_for_nfc_tags,    // Function that should be called
+        "NFC-Poll ",       // Name of the task (for debugging)
+        4096,            // Stack size (bytes)
+        NULL,            // Parameter to pass
+        1,               // Task priority
+        NULL             // Task handle
+    );
+
+    Serial0.println("START application ...");
 }
 
 
