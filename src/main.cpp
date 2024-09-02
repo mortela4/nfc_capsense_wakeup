@@ -784,7 +784,7 @@ void poll_for_nfc_tags(void * parameter)
                 {
                     // NOTE: has to detect tag within 30sec - then clear watchdog here - else Reset will happen:
                     esp_task_wdt_reset();
-                    
+
                     rfalNfcGetActiveDevice(&nfcDevice);
 
                     delay(50);
@@ -921,7 +921,7 @@ void poll_for_nfc_tags(void * parameter)
                             rfalNfcvPollerInitialize();
                             while (rfalNfcvPollerInventory(RFAL_NFCV_NUM_SLOTS_1, RFAL_NFCV_UID_LEN * 8U, nfcDevice->dev.nfcv.InvRes.UID, &invRes, &rcvdLen) == ERR_NONE) 
                             {
-                                delay(130);
+                                delay(130);     // TODO: where does this value come from? Is it magical?? Can it be (radically) reduced???
                             }
                         }
                         break;
