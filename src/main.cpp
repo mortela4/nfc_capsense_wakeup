@@ -1089,7 +1089,7 @@ void setup(void)
     );
 
     Serial0.println("Configuring WDT...");
-    esp_task_wdt_init(WDT_TIMEOUT, true);       // Enable panic so ESP32 restarts.
+    esp_task_wdt_init(WDT_TIMEOUT, true);       // Enable panic so ESP32 restarts. NOTE: be aware of change in WDT-API for ESP32-Arduino library!! (now takes a config-struct as argument, w. timeout in milliseconds)
     esp_task_wdt_add(nfcTask);                     // Add NFC-task to WDT watch (using NULL as argument = current thread).
 
     Serial0.println("START application ...");
